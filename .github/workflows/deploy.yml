@@ -1,0 +1,139 @@
+name: Deploy
+on: [push, workflow_dispatch, pull_request]
+
+env:
+    BUILD_MODE: Release
+    CORE_PLUGIN: ChatProcessor
+    CORE_PLUGIN_MANIFEST: ChatProcessor/src/Bootstrap.cs
+    SHARED_PLUGIN: ChatProcessor.API
+    SOLUTION: chatprocessor.sln
+
+permissions:
+    contents: write
+
+jobs:
+    version:
+        runs-on: ubuntu-latest
+        outputs:
+            semVer: ${{ steps.gitversion.outputs.semVer }}
+            fullSemVer: ${{ steps.gitversion.outputs.fullSemVer }}
+            informationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}
+            preReleaseLabel: ${{ steps.gitversion.outputs.preReleaseLabel }}
+            nuGetVersionV2: ${{ steps.gitversion.outputs.nuGetVersionV2 }}
+            assemblySemVer: ${{ steps.gitversion.outputs.assemblySemVer }}
+            assemblySemFileVer: ${{ steps.gitversion.outputs.assemblySemFileVer }}
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v4
+                with:
+                    fetch-depth: 0 
+            -   name: Fetch all tags
+                run: |
+                    git fetch --tags --force
+                    git tag
+            -   name: Setup GitVersion
+                uses: gittools/actions/gitversion/setup@v3.2.1
+                with:
+                    versionSpec: '5.12.x'
+            -   name: Determine version
+                id: gitversion
+                uses: gittools/actions/gitversion/execute@v1.1.1
+                with:
+                    useConfigFile: true
+                    configFilePath: gitversion.yml
+    build:
+        needs: [version]
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v4
+                with:
+                    fetch-depth: 0
+            -   name: Setup .NET
+                uses: actions/setup-dotnet@v4
+                with:
+                    dotnet-version: '10.0.x'
+            -   name: Building
+                run: |
+                    sed -i "s/Version = \".*\",/Version = \"${{ needs.version.outputs.semVer }}\",/" ${{ env.CORE_PLUGIN_MANIFEST }}
+                    dotnet build ${{env.SOLUTION}} --configuration ${{ env.BUILD_MODE }} /p:Version=${{ needs.version.outputs.fullSemVer }} /p:AssemblyVersion=${{ needs.version.outputs.assemblySemVer }} /p:FileVersion=${{ needs.version.outputs.assemblySemFileVer }} /p:InformationalVersion=${{ needs.version.outputs.informationalVersion }}
+                    dotnet publish ${{ env.CORE_PLUGIN }}/${{ env.CORE_PLUGIN }}.csproj --configuration ${{ env.BUILD_MODE }} --no-build --output ./core
+                    dotnet publish ${{ env.SHARED_PLUGIN }}/${{ env.SHARED_PLUGIN }}.csproj --configuration ${{ env.BUILD_MODE }} --no-build --output ./shared
+            -   name: Create archive
+                run: |
+                    mkdir -p artifacts
+                    cp -r core artifacts/${{env.CORE_PLUGIN}}
+                    cp -r shared artifacts/${{env.SHARED_PLUGIN}}
+                    cd artifacts
+                    zip -r ../${{env.CORE_PLUGIN}}-v${{ needs.version.outputs.semVer }}.zip ${{env.CORE_PLUGIN}}
+                    zip -r ../${{env.SHARED_PLUGIN}}-v${{ needs.version.outputs.semVer }}.zip ${{env.SHARED_PLUGIN}}
+                    cd ..
+            -   name: Upload Core Artifacts
+                uses: actions/upload-artifact@v4
+                with:
+                    name: ${{ env.CORE_PLUGIN }}-v${{ needs.version.outputs.semVer }}
+                    path: ${{ env.CORE_PLUGIN }}-v${{ needs.version.outputs.semVer }}.zip
+                    retention-days: 30
+            -   name: Upload Shared Artifacts
+                uses: actions/upload-artifact@v4
+                with:
+                    name: ${{ env.SHARED_PLUGIN }}-v${{ needs.version.outputs.semVer }}
+                    path: ${{ env.SHARED_PLUGIN }}-v${{ needs.version.outputs.semVer }}.zip
+                    retention-days: 30
+    deploy-release:
+        needs: [version, build]
+        runs-on: ubuntu-latest
+        if: github.ref == 'refs/heads/master'
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v4
+                with:
+                    fetch-depth: 0
+            -   name: Download artifacts
+                uses: actions/download-artifact@v4
+                with:
+                    pattern: '*-v${{ needs.version.outputs.semVer }}'
+                    merge-multiple: true
+                    path: ./artifacts
+            -   name: Create release
+                uses: softprops/action-gh-release@v1
+                with:
+                    tag_name: v${{ needs.version.outputs.semVer }}
+                    name: v${{ needs.version.outputs.semVer }}
+                    draft: false
+                    prerelease: ${{ contains(needs.version.outputs.semVer, '-') }}
+                    generate_release_notes: true
+                    files: |
+                        artifacts/${{ env.CORE_PLUGIN }}-v${{ needs.version.outputs.semVer }}.zip
+                        artifacts/${{ env.SHARED_PLUGIN }}-v${{ needs.version.outputs.semVer }}.zip
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    deploy-dev:
+        needs: [version, build]
+        runs-on: ubuntu-latest
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/hotfix/'))
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v4
+                with:
+                    fetch-depth: 0
+            -   name: Download artifacts
+                uses: actions/download-artifact@v4
+                with:
+                    pattern: '*-v${{ needs.version.outputs.semVer }}'
+                    merge-multiple: true
+                    path: ./artifacts
+            -   name: Create release
+                uses: softprops/action-gh-release@v1
+                with:
+                    tag_name: v${{ needs.version.outputs.semVer }}
+                    name: v${{ needs.version.outputs.semVer }}
+                    draft: false
+                    prerelease: true
+                    generate_release_notes: true
+                    files: |
+                        artifacts/${{ env.CORE_PLUGIN }}-v${{ needs.version.outputs.semVer }}.zip
+                        artifacts/${{ env.SHARED_PLUGIN }}-v${{ needs.version.outputs.semVer }}.zip
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}                   
+                           

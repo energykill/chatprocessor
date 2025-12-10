@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <AssemblyName>ChatProcessor</AssemblyName>
+    <OutputPath>$(MSBuildThisFileDirectory)build/</OutputPath>
+    <PublishDir>$(OutputPath)publish/ChatProcessor</PublishDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ChatProcessor.API\ChatProcessor.API.csproj" />
+	  <Reference Include="PlaceholderAPI.Contract">
+			<HintPath>vendor\PlaceholderAPI.Contract\PlaceholderAPI.Contract.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+  
+  <ItemGroup>
+    <Content Include="resources/gamedata/**/*;resources/templates/**/*;resources/translations/**/*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  
+
+  <Target Name="CopySharedDLL" AfterTargets="Publish">
+    <MakeDir Directories="$(PublishDir)resources/exports" />
+		<ItemGroup>
+			<SharedDll Include="$(PublishDir)ChatProcessor.API.dll" />
+		</ItemGroup>   
+    <Copy SourceFiles="@(SharedDll)" DestinationFolder="$(PublishDir)resources/exports/" SkipUnchangedFiles="true" /> 
+  </Target>
+
+</Project>
+

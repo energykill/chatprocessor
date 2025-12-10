@@ -1,0 +1,27 @@
+mode: Mainline
+
+branches:
+  master:
+    regex: ^master$
+    tag: ''
+    increment: Patch
+    is-mainline: true
+    is-release-branch: true
+    prevent-increment-of-merged-branch-version: true
+    track-merge-target: false
+  dev:
+    regex: ^dev$ 
+    tag: dev
+    increment: Inherit
+    is-mainline: false
+    is-release-branch: false
+    source-branches: [ master ]
+    track-merge-target: true
+    pre-release-weight: 1
+ignore:
+  sha: []
+
+commit-message-incrementing: Enabled
+major-version-bump-message: '\+semver:\s?(breaking|major)'
+minor-version-bump-message: '\+semver:\s?(feature|minor)'
+patch-version-bump-message: '\+semver:\s?(fix|patch)'

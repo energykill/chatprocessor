@@ -1,3 +1,0 @@
-C:\Users\mateu\Desktop\plugins\chatprocessor\ChatProcessor.API\build\publish\ChatProcessor.API\ChatProcessor.API.dll
-C:\Users\mateu\Desktop\plugins\chatprocessor\ChatProcessor.API\build\publish\ChatProcessor.API\ChatProcessor.API.pdb
-C:\Users\mateu\Desktop\plugins\chatprocessor\ChatProcessor.API\build\publish\ChatProcessor.API\ChatProcessor.API.deps.json

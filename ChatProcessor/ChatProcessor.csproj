@@ -14,9 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ChatProcessor.API\ChatProcessor.API.csproj" />
-	  <Reference Include="PlaceholderAPI.Contract">
-			<HintPath>vendor\PlaceholderAPI.Contract\PlaceholderAPI.Contract.dll</HintPath>
-		</Reference>
+    <ProjectReference Include="..\vendor\PlaceholderAPI\PlaceholderAPI.Contract\PlaceholderAPI.Contract.csproj" />
 	</ItemGroup>
   
   <ItemGroup>

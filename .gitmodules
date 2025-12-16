@@ -1,0 +1,3 @@
+[submodule "vendor/PlaceholderAPI"]
+	path = vendor/PlaceholderAPI
+	url = https://github.com/SwiftlyS2-Plugins/PlaceholderAPI.git

@@ -29,7 +29,7 @@ public class ChatConfig
 
     };
     public Dictionary<string, ChatSettings> Players { get; set; } = [];
-    public Dictionary<string,ChatSettings> Permissions { get; set; } = [];
+    public Dictionary<string, ChatSettings> Permissions { get; set; } = [];
     
 }
 public class ChatSettings
@@ -39,5 +39,4 @@ public class ChatSettings
     public string? TagColor { get; set; }
     public string? NameColor { get; set; }
     public string? MessageColor { get; set; }
-    
 }

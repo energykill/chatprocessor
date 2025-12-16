@@ -34,7 +34,7 @@ public static class PlayerExtension
             (byte)Team.T => "yellow",
             (byte)Team.CT => "blue",
             (byte)Team.Spectator => "grey",
-            _ => "White",            
+            _ => "white",            
         };
 
         return color;
